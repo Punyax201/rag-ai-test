@@ -314,6 +314,19 @@ def main():
     qargs = ap_ask.parse_args()
     op_ask(qargs)
 
+def query_handler(query: str, top_k: int = 5, index_path: str = "./data/bhot_index.faiss"):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--index_path", type=str, default="./data/bhot_index.faiss")
+    parser.add_argument("--top_k", type=int, default=5)
+    parser.add_argument("query", type=str, nargs="?", default=query)
+    # args = parser.parse_args()
+    client = get_client()
+    index, meta = load_index(index_path)
+    hits = retrieve(client, index, meta, query, top_k)
+    context = build_context(hits)
+    answer = ask_gpt(client, query, context)
+    sources = [h.meta.get("source") for h in hits]
+    return {"answer": answer, "sources": sources}
 
 if __name__ == "__main__":
     main()
