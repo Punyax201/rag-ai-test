@@ -15,3 +15,5 @@ tiktoken
 PyPDF2
 openai
 faiss-cpu
+uvicorn
+fastapi

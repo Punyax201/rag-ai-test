@@ -263,7 +263,7 @@ def op_ingest(args):
     all_pdf_docs.extend(read_pdfs(f"{args.data_dir}/pdf"))
     # for p, t in read_pdfs(args.data_dir): all_docs.append((p, t))  # enable if you add PDF loader
 
-    if not all_txt_docs and all_pdf_docs:
+    if not all_pdf_docs:
         raise SystemExit(f"No .txt/.md/ .pdf files found in {args.data_dir}")
 
     chunks: List[DocChunk] = []
@@ -301,22 +301,32 @@ def main():
     # parser.add_argument("--data_dir", type=str, default="./data")
     # parser.add_argument("--chunk_size", type=int, default=DEFAULT_CHUNK_SIZE)
     # parser.add_argument("--chunk_overlap", type=int, default=DEFAULT_CHUNK_OVERLAP)
-    # parser.add_argument("--index_path", type=str, default="./data/bhot_index.faiss")
+    # parser.add_argument("--index_path", type=str, default="./data/data.faiss")
     # args = parser.parse_args()
     # op_ingest(args)
 
     # Only run once to build index
 
     ap_ask = sub.add_parser("ask", help="Query the index and get an answer")
-    ap_ask.add_argument("--index_path", default="./data/bhot_index.faiss",)
+    ap_ask.add_argument("--index_path", default="./data/data.faiss",)
     ap_ask.add_argument("--top_k", type=int, default=5)
     ap_ask.add_argument("query", type=str, nargs="?", default="What is the capital of France?")
     qargs = ap_ask.parse_args()
     op_ask(qargs)
 
-def query_handler(query: str, top_k: int = 5, index_path: str = "./data/bhot_index.faiss"):
+ # For FastAPI integration: expects a dict with keys data_dir, chunk_size, chunk_overlap, index_path
+def update_vector_base(request_data: dict):
+    # request_data: dict from FastAPI POST body
+    args = type('Args', (), {})()
+    args.data_dir = request_data.get('data_dir', './data')
+    args.chunk_size = request_data.get('chunk_size', DEFAULT_CHUNK_SIZE)
+    args.chunk_overlap = request_data.get('chunk_overlap', DEFAULT_CHUNK_OVERLAP)
+    args.index_path = request_data.get('index_path', './data/data.faiss')
+    op_ingest(args)      
+    
+def query_handler(query: str, top_k: int = 5, index_path: str = "./data/data.faiss"):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--index_path", type=str, default="./data/bhot_index.faiss")
+    parser.add_argument("--index_path", type=str, default="./data/data.faiss")
     parser.add_argument("--top_k", type=int, default=5)
     parser.add_argument("query", type=str, nargs="?", default=query)
     # args = parser.parse_args()
