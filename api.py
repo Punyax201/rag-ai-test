@@ -19,6 +19,7 @@ class QueryRequest(BaseModel):
     query: str
     top_k: Optional[int] = 5
     index_path: Optional[str] = "./data/data.faiss"
+    historical_context: Optional[object]
 
 @app.post("/ask")
 def ask_endpoint(request: QueryRequest):
@@ -27,7 +28,7 @@ def ask_endpoint(request: QueryRequest):
         index, meta = load_index(request.index_path)
         hits = retrieve(client, index, meta, request.query, request.top_k)
         context = build_context(hits)
-        response = query_handler(request.query)
+        response = query_handler(request)
         # sources = [h.meta.get("source") for h in hits]
         return response
     except Exception as e:

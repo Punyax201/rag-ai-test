@@ -174,15 +174,25 @@ def build_context(hits: List[DocChunk]) -> str:
     return "\n\n".join(blocks)
 
 
-def ask_gpt(client: OpenAI, question: str, context_text: str) -> str:
+def ask_gpt(client: OpenAI, question: str, context_text: str, historical_context: list) -> str:
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": (
+        
+    ]
+
+    # Add past conversation
+    if historical_context:
+        messages.extend(historical_context)
+    
+    messages.append({
+        "role": "user",
+        "content": (
             "Use ONLY the context below to answer. If insufficient, say you don't know.\n" \
             + "---\n" + context_text + "\n---\n" \
             + f"Question: {question}"
-        )}
-    ]
+        )
+    })
+    
     resp = client.chat.completions.create(
         model=CHAT_MODEL,
         messages=messages,
@@ -324,17 +334,17 @@ def update_vector_base(request_data: dict):
     args.index_path = request_data.get('index_path', './data/data.faiss')
     op_ingest(args)      
     
-def query_handler(query: str, top_k: int = 5, index_path: str = "./data/data.faiss"):
+def query_handler(request: object, top_k: int = 5, index_path: str = "./data/data.faiss"):
     parser = argparse.ArgumentParser()
     parser.add_argument("--index_path", type=str, default="./data/data.faiss")
     parser.add_argument("--top_k", type=int, default=5)
-    parser.add_argument("query", type=str, nargs="?", default=query)
+    parser.add_argument("query", type=str, nargs="?", default=request.query)
     # args = parser.parse_args()
     client = get_client()
     index, meta = load_index(index_path)
-    hits = retrieve(client, index, meta, query, top_k)
+    hits = retrieve(client, index, meta, request.query, top_k)
     context = build_context(hits)
-    answer = ask_gpt(client, query, context)
+    answer = ask_gpt(client, request.query, context, request.historical_context)
     sources = [h.meta.get("source") for h in hits]
     return {"answer": answer, "sources": sources}
 
