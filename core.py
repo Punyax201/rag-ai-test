@@ -11,6 +11,7 @@ import PyPDF2
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
+from analysis import read_excels
 
 import numpy as np
 from openai import OpenAI
@@ -25,6 +26,20 @@ EMBED_MODEL = "text-embedding-3-small"
 CHAT_MODEL  = "gpt-4o-mini"
 DEFAULT_CHUNK_SIZE = 600 
 DEFAULT_CHUNK_OVERLAP = 80
+
+USER_PROMPT = (
+    "You are a helpful assistant answering based only on the provided context. "
+    "Follow these steps strictly:\n\n"
+    "1. First, write a short summary (max 100 words) of the context or scenario in natural language. "
+    "   - Include a mild, context-appropriate greeting only once.\n"
+    "2. On a new line, explicitly list the relevant source(s) in square brackets, e.g. [Source 1, Source 3].\n"
+    "3. Then, provide the final answer to the question. "
+    "   - Be concise, factual, and grounded in the context. "
+    "   - If the answer is not present in the context, reply with: 'I don't know.'\n\n"
+    "Context:\n---\n{context}\n---\n"
+    "Question: {question}"
+)
+
 
 
 # ---------- Data structures ----------
@@ -174,25 +189,11 @@ def build_context(hits: List[DocChunk]) -> str:
     return "\n\n".join(blocks)
 
 
-def ask_gpt(client: OpenAI, question: str, context_text: str, historical_context: list) -> str:
+def ask_gpt(client: OpenAI, question: str, context_text: str) -> str:
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        
+         {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": USER_PROMPT.replace("{context}", context_text).replace("{question}", question)},
     ]
-
-    # Add past conversation
-    if historical_context:
-        messages.extend(historical_context)
-    
-    messages.append({
-        "role": "user",
-        "content": (
-            "Use ONLY the context below to answer. If insufficient, say you don't know.\n" \
-            + "---\n" + context_text + "\n---\n" \
-            + f"Question: {question}"
-        )
-    })
-    
     resp = client.chat.completions.create(
         model=CHAT_MODEL,
         messages=messages,
@@ -273,14 +274,18 @@ def op_ingest(args):
     all_pdf_docs.extend(read_pdfs(f"{args.data_dir}/pdf"))
     # for p, t in read_pdfs(args.data_dir): all_docs.append((p, t))  # enable if you add PDF loader
 
-    if not all_pdf_docs:
-        raise SystemExit(f"No .txt/.md/ .pdf files found in {args.data_dir}")
+    # if not all_txt_docs and all_pdf_docs:
+    #     raise SystemExit(f"No .txt/.md/ .pdf files found in {args.data_dir}")
 
     chunks: List[DocChunk] = []
     for path, text in all_pdf_docs:
         title = os.path.splitext(os.path.basename(path))[0]
         for ch in recursive_chunk(text, args.chunk_size, args.chunk_overlap):
             chunks.append(DocChunk(text=ch, meta={"source": path, "title": title}))
+
+    #  Excel Data
+    excel_chunks = read_excels()
+    chunks.extend([DocChunk(text=ch, meta={"source": "excel_data", "title": "Excel Data for Export"}) for ch in excel_chunks])
 
     print(f"Prepared {len(chunks)} chunks. Embedding…")
     embs = embed_texts(client, [c.text for c in chunks])
@@ -308,43 +313,33 @@ def main():
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(required=False)
 
-    # parser.add_argument("--data_dir", type=str, default="./data")
-    # parser.add_argument("--chunk_size", type=int, default=DEFAULT_CHUNK_SIZE)
-    # parser.add_argument("--chunk_overlap", type=int, default=DEFAULT_CHUNK_OVERLAP)
-    # parser.add_argument("--index_path", type=str, default="./data/data.faiss")
-    # args = parser.parse_args()
-    # op_ingest(args)
+    parser.add_argument("--data_dir", type=str, default="./data")
+    parser.add_argument("--chunk_size", type=int, default=DEFAULT_CHUNK_SIZE)
+    parser.add_argument("--chunk_overlap", type=int, default=DEFAULT_CHUNK_OVERLAP)
+    parser.add_argument("--index_path", type=str, default="./data/data.faiss")
+    args = parser.parse_args()
+    op_ingest(args)
 
     # Only run once to build index
 
-    ap_ask = sub.add_parser("ask", help="Query the index and get an answer")
-    ap_ask.add_argument("--index_path", default="./data/data.faiss",)
-    ap_ask.add_argument("--top_k", type=int, default=5)
-    ap_ask.add_argument("query", type=str, nargs="?", default="What is the capital of France?")
-    qargs = ap_ask.parse_args()
-    op_ask(qargs)
+    # ap_ask = sub.add_parser("ask", help="Query the index and get an answer")
+    # ap_ask.add_argument("--index_path", default="./data/data.faiss",)
+    # ap_ask.add_argument("--top_k", type=int, default=5)
+    # ap_ask.add_argument("query", type=str, nargs="?", default="What is the capital of France?")
+    # qargs = ap_ask.parse_args()
+    # op_ask(qargs)
 
- # For FastAPI integration: expects a dict with keys data_dir, chunk_size, chunk_overlap, index_path
-def update_vector_base(request_data: dict):
-    # request_data: dict from FastAPI POST body
-    args = type('Args', (), {})()
-    args.data_dir = request_data.get('data_dir', './data')
-    args.chunk_size = request_data.get('chunk_size', DEFAULT_CHUNK_SIZE)
-    args.chunk_overlap = request_data.get('chunk_overlap', DEFAULT_CHUNK_OVERLAP)
-    args.index_path = request_data.get('index_path', './data/data.faiss')
-    op_ingest(args)      
-    
-def query_handler(request: object, top_k: int = 5, index_path: str = "./data/data.faiss"):
+def query_handler(query: str, top_k: int = 5, index_path: str = "./data/data.faiss"):
     parser = argparse.ArgumentParser()
     parser.add_argument("--index_path", type=str, default="./data/data.faiss")
     parser.add_argument("--top_k", type=int, default=5)
-    parser.add_argument("query", type=str, nargs="?", default=request.query)
+    parser.add_argument("query", type=str, nargs="?", default=query)
     # args = parser.parse_args()
     client = get_client()
     index, meta = load_index(index_path)
-    hits = retrieve(client, index, meta, request.query, top_k)
+    hits = retrieve(client, index, meta, query.query, top_k)
     context = build_context(hits)
-    answer = ask_gpt(client, request.query, context, request.historical_context)
+    answer = ask_gpt(client, query.query, context)
     sources = [h.meta.get("source") for h in hits]
     return {"answer": answer, "sources": sources}
 

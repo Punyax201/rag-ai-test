@@ -1,6 +1,7 @@
 # Add your Python dependencies here
 numpy
-# pandas
+pandas
+openpyxl
 # scikit-learn
 # tensorflow
 # keras==3.10.0
