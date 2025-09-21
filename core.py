@@ -36,6 +36,8 @@ USER_PROMPT = (
     "3. Then, provide the final answer to the question. "
     "   - Be concise, factual, and grounded in the context. "
     "   - If the answer is not present in the context, reply with: 'I don't know.'\n\n"
+    "4. Highlight key figures such as amounts, important names, locations as bold html text.\n"
+    "5. Text marked as bold should be wrapped in <b> and </b> tags.\n"
     "Context:\n---\n{context}\n---\n"
     "Question: {question}"
 )
