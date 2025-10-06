@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "soovik",
+  "private_key_id": "4f33db1552443b38c85bbe0b7b0b08167184910b",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDd4H9HByj8HieI\nIq4fe0HLxZpIThmiGOEtbdzO3L1tpmnBmCiy9f4gLvbg/pG7o7CsChBplrckMYgh\nKontTWmkzzNXzzEXdFxg5lMp3kAqf+6A6ACFG+Ssbo1TOcB37QElUuxdLITPlw+q\nl7G8K9z9yzvaR2bNVks7OzsClqiXOSHdSw6rdSnWsOFHsqSvKTs7n2zIVQFgxlEt\n6WFOq5Z+o5wZqTsi5SmRNMs/vo8KY5xzjcA5ynINcf6qVF3Nj6lCG+8Un2emBeja\n+vlmGBEcrmpU3rE5ZXWBGxgoQIsi3BHiYNC5giSu7d4hz9+UVhaOT7W1RzSYnqxe\nxyhhBkEpAgMBAAECggEAAWM8bItsC1KddO2hmOcOkOmQFtRtNt0wuFXj8APDqAZG\nykwLMh5Ve+pLRzo0W1/xVIweEOj9RXvNUgbH9MzbhKk6lRmhwResVbtPCRefn1xs\nN5Br42k6n4Tz+5GkhWN9Mrhva8BB5uH3Gj4nYYnFMK2nFs0ERLO91fWff3tFe+ef\ntioRDaLf3Hj/9L8+rVfTWfsw3qkmENn2cLvbNLwOKEtwdJHd939hnqYYwoOjbAD+\n2spp52T9BpWra35LLngUuoUYzNGaX1KlpeBRvb1WLeDIrrVUY459uTZXNAtBJIPK\ndUuxf7JO3LIzu3H66Fj2q2gPqBAFlwGFBO8w/nQ8UQKBgQDy/Czmn6Yl6Jv1zDl2\n2LvVOP3+L2YLsuXw5/XE4rSvvY6Xf5XtJbyNHFc8lapMCTNJKzKiJDAQFnHum7S9\nSWb6gOXEP0mtA8UkoOiUw51N14vlyqz3KA99Lg4Paa38vUnqsZRrP6NCszdXesL5\nnE3ojjZoR7JTc6gF5BhIki/bkQKBgQDpwuLXbTXWqlLMQVcH1uTiWCvyofpzdD25\niyxAUUGvLqK4Pb+WhllVUEU3d1FGvckfp2/XZHIRqR4yJrFRf7NzR0sMDB/RUjdq\ngcNPcLLenhUhKISURggc5DnSjlmaVG+9bSHHrpy3+kSBuFP1TPoxrELMN/2Owq4G\n7XlwdrTQGQKBgFMDYHuyE1tkKtRA32kBBrsD65KJsv1QM0qolMidA0n/ItYTWq9Y\ncyBqjEtAfpvXkNPwlC3c2ybD5Ey2mXsJtsriep0fWhZn8VRgPNWGNxm/CCaLpagS\n4afMsjUFz9FHAhfSb3hsl2RUQhX69N2+TseivmfGBuCH5OGOWdWBTCRhAoGAaU0D\nBmwJvqOHHL+qRrvE6zkwwuG4gl2wmG5bBrYT0qg9YKVgMpxejZHVPEEhea5wdTPl\nq69xuwbltU28vqu52IobAlhL1O0mTXIa2yQ3TxUDC6bG4kwRx4H/khvRvTWgCEKq\n3tqHelDgn1a7a1q7sbiZdokaTT7hSfmbpM+0b7ECgYEAypHut0WuByQ6FGKQdYZY\noyenODsyVLyt1GSQx357B+VAHaWRBMbamVDRd/dEl8I5dFj0EWCif7gcruo1k4kb\ntjzsNzJhfBaGILtUbZRB22Zg1RXAk2aG/HWGkpcTMG1SxHMVjQw+Uh5tD81A6QAv\nwj9znAU73/+gyEP5JyOT6C8=\n-----END PRIVATE KEY-----\n",
+  "client_email": "soovik-document-service@soovik.iam.gserviceaccount.com",
+  "client_id": "109111313678137606850",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/soovik-document-service%40soovik.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

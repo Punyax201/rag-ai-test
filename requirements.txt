@@ -18,3 +18,5 @@ openai
 faiss-cpu
 uvicorn
 fastapi
+google-cloud-storage
+python-multipart
