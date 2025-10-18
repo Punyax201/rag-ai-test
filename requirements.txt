@@ -16,6 +16,11 @@ langchain-community
 PyPDF2
 openai
 faiss-cpu
+# faiss-gpu
+torch
+sentence_transformers
+feedparser
+tf_keras
 uvicorn
 fastapi
 google-cloud-storage

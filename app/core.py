@@ -11,7 +11,7 @@ import PyPDF2
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
-from app.analysis import read_excels
+from app.analysis import read_excels, get_similarity
 
 import numpy as np
 from openai import OpenAI
@@ -182,12 +182,13 @@ SYSTEM_PROMPT = (
 )
 
 
-def build_context(hits: List[DocChunk]) -> str:
+def build_context(hits: List[object]) -> str:
     blocks = []
     for i, h in enumerate(hits, 1):
-        src = h.meta.get("source", "unknown")
-        title = h.meta.get("title", os.path.basename(src))
-        blocks.append(f"[Source {i}: {title}]\n{h.text}")
+        src = h['metadata'].get("source", "unknown")
+        title = h['metadata'].get("title", os.path.basename(src))
+        text = h['metadata'].get("text", "")
+        blocks.append(f"[Source {i}: {title}]\n{text}")
     return "\n\n".join(blocks)
 
 
@@ -269,31 +270,70 @@ def query_pdf(query, index_path="pdf_index"):
 
 def op_ingest(args):
     client = get_client()
+
+    # helper to support both dict and argparse.Namespace
+    def _get(k, default=None):
+        try:
+            if isinstance(args, dict):
+                return args.get(k, default)
+            return getattr(args, k, default)
+        except Exception:
+            return default
+
+    base_dir = _get('data_dir', './data')
+    pdf_dir = os.path.join(base_dir, 'pdf')
+    excel_dir = os.path.join(base_dir, 'excel')
+    text_dir = os.path.join(base_dir, 'text')
+
     all_txt_docs: List[Tuple[str, str]] = []
-    all_txt_docs.extend(read_txt_md_files(args['data_dir']))
-
     all_pdf_docs: List[Tuple[str, str]] = []
-    all_pdf_docs.extend(read_pdfs(f"{args['data_dir']}"))
-    # for p, t in read_pdfs(args.data_dir): all_docs.append((p, t))  # enable if you add PDF loader
 
-    # if not all_txt_docs and all_pdf_docs:
-    #     raise SystemExit(f"No .txt/.md/ .pdf files found in {args.data_dir}")
+    # Read text files from ./data/text (if present)
+    if os.path.isdir(text_dir):
+        all_txt_docs.extend(read_txt_md_files(text_dir))
+    else:
+        print(f"[info] text dir not found: {text_dir} (skipping)")
 
+    # Read pdf files from ./data/pdf (if present)
+    if os.path.isdir(pdf_dir):
+        all_pdf_docs.extend(read_pdfs(pdf_dir))
+    else:
+        print(f"[info] pdf dir not found: {pdf_dir} (skipping)")
+
+    # Prepare chunks
     chunks: List[DocChunk] = []
+    chunk_size = _get('chunk_size', DEFAULT_CHUNK_SIZE)
+    chunk_overlap = _get('chunk_overlap', DEFAULT_CHUNK_OVERLAP)
+
     for path, text in all_pdf_docs:
         title = os.path.splitext(os.path.basename(path))[0]
-        for ch in recursive_chunk(text, args['chunk_size'], args['chunk_overlap']):
+        for ch in recursive_chunk(text, chunk_size, chunk_overlap):
             chunks.append(DocChunk(text=ch, meta={"source": path, "title": title}))
 
-    #  Excel Data
-    excel_chunks = read_excels(data_dir=args['data_dir'])
-    chunks.extend([DocChunk(text=ch, meta={"source": "excel_data", "title": "Excel Data for Export"}) for ch in excel_chunks])
+    for path, text in all_txt_docs:
+        title = os.path.splitext(os.path.basename(path))[0]
+        for ch in recursive_chunk(text, chunk_size, chunk_overlap):
+            chunks.append(DocChunk(text=ch, meta={"source": path, "title": title}))
+
+    # Excel files from ./data/excel
+    if os.path.isdir(excel_dir):
+        try:
+            excel_chunks = read_excels(data_dir=excel_dir)
+            chunks.extend([DocChunk(text=ch, meta={"source": "excel_data", "title": "Excel Data"}) for ch in excel_chunks])
+        except Exception as e:
+            print(f"[warn] failed reading excel files from {excel_dir}: {e}")
+    else:
+        print(f"[info] excel dir not found: {excel_dir} (skipping)")
 
     print(f"Prepared {len(chunks)} chunks. Embedding…")
-    embs = embed_texts(client, [c.text for c in chunks])
-    index = build_faiss_index(embs)
-    save_index(index, chunks, args['index_path'])
-    print(f"Index saved to: {args['index_path']} (+ .meta.json)")
+    embs = embed_texts(client, [c.text for c in chunks]) if chunks else np.zeros((0, 1), dtype='float32')
+    if len(chunks) > 0:
+        index = build_faiss_index(embs)
+        index_path = _get('index_path', './data/data.faiss')
+        save_index(index, chunks, index_path)
+        print(f"Index saved to: {index_path} (+ .meta.json)")
+    else:
+        print("[warn] no chunks to index. Skipping index creation.")
 
 
 def op_ask(args):
@@ -331,19 +371,42 @@ def main():
     # qargs = ap_ask.parse_args()
     # op_ask(qargs)
 
-def query_handler(query: str, top_k: int = 5, index_path: str = "./data/data.faiss"):
+def query_handler(query: str, top_k: int = 6, index_path: str = "./data/data.faiss"):
     parser = argparse.ArgumentParser()
     parser.add_argument("--index_path", type=str, default="./data/data.faiss")
     parser.add_argument("--top_k", type=int, default=5)
     parser.add_argument("query", type=str, nargs="?", default=query)
+
     # args = parser.parse_args()
     client = get_client()
-    index, meta = load_index(index_path)
-    hits = retrieve(client, index, meta, query.query, top_k)
+    hits = get_similarity(client=client, text=query.query, top_k=top_k)
+    # index, meta = load_index(index_path)
+    # hits = retrieve(client, index, meta, query.query, top_k)
     context = build_context(hits)
     answer = ask_gpt(client, query.query, context)
-    sources = [h.meta.get("source") for h in hits]
+    sources = [h['metadata'].get("source") for h in hits]
     return {"answer": answer, "sources": sources}
+
+def retrieve_top_k(vectorstore, query_text, top_k=3):
+    """
+    Retrieve top-K relevant chunks from your custom VectorStore.
+    Returns both the text and metadata for source tracking.
+    """
+    # Use the VectorStore's query function
+    results = vectorstore.query(query_text, k=top_k)
+    
+    # Extract text and metadata
+    context_chunks = [r.page_content for r in results]
+    metadata_list = [r.metadata for r in results]
+    
+    # Optional: log sources
+    print("\nRetrieved Contexts:")
+    for i, (chunk, meta) in enumerate(zip(context_chunks, metadata_list)):
+        print(f"[{i+1}] Source: {meta.get('source', 'Unknown')} | Added: {meta.get('added_on', 'N/A')}")
+        print(f"→ {chunk[:150]}...\n")
+    
+    return context_chunks, metadata_list
+
 
 if __name__ == "__main__":
     main()
