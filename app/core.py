@@ -8,7 +8,7 @@ import argparse
 from dataclasses import dataclass
 from typing import List, Dict, Tuple
 import PyPDF2
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 from app.analysis import read_excels, get_similarity

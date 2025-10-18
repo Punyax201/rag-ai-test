@@ -12,6 +12,7 @@ openpyxl
 # peft
 langchain
 langchain-community
+langchain-text-splitters
 # tiktoken
 PyPDF2
 openai
