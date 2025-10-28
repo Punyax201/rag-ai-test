@@ -1,9 +1,9 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 import os
-from app.core import load_index, build_context, ask_gpt, retrieve, get_client, query_handler, op_ingest
+from .core import query_handler, op_ingest
 
 app = FastAPI()
 origins = ['*']
@@ -90,3 +90,7 @@ async def update_vector_base_endpoint(files: list[UploadFile], chunk_size: Optio
 @app.get("/")
 def root():
     return {"message": "RAG AI v1 API is running."}
+
+# if __name__ == "__main__":
+#     port = int(os.getenv("PORT", 4000))
+#     uvicorn.run(app, host="0.0.0.0", port=port)

@@ -1,5 +1,4 @@
 from google.cloud import storage
-import os
 
 BUCKET_NAME = 'soovik-documents'
 

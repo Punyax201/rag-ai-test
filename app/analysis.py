@@ -9,7 +9,7 @@ from PyPDF2 import PdfReader
 import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
-from app.store.vector import VectorStore
+from .store.vector import VectorStore
 from sklearn.metrics.pairwise import cosine_similarity
 
 EXCEL_IMPORT_DIR = "./data/excel/"
