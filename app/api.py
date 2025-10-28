@@ -89,4 +89,4 @@ async def update_vector_base_endpoint(files: list[UploadFile], chunk_size: Optio
 
 @app.get("/")
 def root():
-    return {"message": "RAG AI API is running."}
+    return {"message": "RAG AI v1 API is running."}
