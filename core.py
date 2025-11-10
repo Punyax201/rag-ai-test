@@ -11,7 +11,7 @@ import PyPDF2
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
-from .analysis import read_excels, get_similarity
+from analysis import read_excels, get_similarity
 
 import numpy as np
 from openai import OpenAI

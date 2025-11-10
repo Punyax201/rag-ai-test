@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 import os
-from .core import query_handler, op_ingest
+# from .core import query_handler, op_ingest
+from core import query_handler, op_ingest
 
 app = FastAPI()
 origins = ['*']
