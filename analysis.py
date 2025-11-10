@@ -10,7 +10,7 @@ import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
 from store.vector import VectorStore
-from sklearn.metrics.pairwise import cosine_similarity
+# from sklearn.metrics.pairwise import cosine_similarity
 
 EXCEL_IMPORT_DIR = "./data/excel/"
 PDF_IMPORT_DIR = "./data/pdf/"
